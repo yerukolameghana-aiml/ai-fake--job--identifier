@@ -1,0 +1,293 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fake Job Offer Detector</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        header {
+            background: #172554;
+            color: white;
+            text-align: center;
+            padding: 28px 15px;
+        }
+
+        header h1 {
+            margin: 0 0 10px;
+            font-size: 28px;
+        }
+
+        header p {
+            margin: 0;
+            color: #dbeafe;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 4px 18px #00000010;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin: 18px 0 8px;
+        }
+
+        textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        textarea {
+            min-height: 170px;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 18px;
+            padding: 14px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            background: #94a3b8;
+            cursor: wait;
+        }
+
+        #status {
+            margin-top: 16px;
+            font-weight: bold;
+        }
+
+        .result-card {
+            margin-top: 18px;
+            padding: 18px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .result-card h3 {
+            margin-top: 0;
+            color: #1d4ed8;
+        }
+
+        .result-text {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            line-height: 1.6;
+        }
+
+        .tips {
+            margin-top: 25px;
+            padding: 18px;
+            background: #eff6ff;
+            border-radius: 10px;
+        }
+
+        .tips h3 {
+            margin-top: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 15px;
+                padding: 18px;
+            }
+
+            header h1 {
+                font-size: 23px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>🛡️ AI Fake Job Offer Detector</h1>
+        <p>Check job messages for possible scam warning signs.</p>
+    </header>
+
+    <main class="container">
+        <h2>Analyze a Job Offer</h2>
+        <p>Paste a job offer or recruitment message below.</p>
+
+        <form id="analysisForm">
+            <label for="jobText">Job Offer Message</label>
+            <textarea
+                id="jobText"
+                maxlength="10000"
+                placeholder="Paste the job offer message here..."
+                required
+            ></textarea>
+
+            <label for="model">Choose an AI Model</label>
+            <select id="model">
+                <option value="Gemma">Gemma 3:1b</option>
+                <option value="Llama">Llama 3.2</option>
+                <option value="Both">Compare Both Models</option>
+            </select>
+
+            <button type="submit" id="analyzeButton">
+                Analyze Job Offer
+            </button>
+        </form>
+
+        <p id="status" role="status" aria-live="polite"></p>
+        <section id="results" aria-live="polite"></section>
+
+        <section class="tips">
+            <h3>🔐 Job Safety Tips</h3>
+            <ul>
+                <li>Never share passwords or OTPs.</li>
+                <li>Be careful if someone asks you to pay to get a job.</li>
+                <li>Check the company using its official website.</li>
+                <li>Do not trust messages that pressure you to act quickly.</li>
+            </ul>
+        </section>
+
+        <p>
+            <strong>Important:</strong> AI can identify warning signs, but
+            its result does not prove that a job is real or fake.
+            Verify the employer independently.
+        </p>
+    </main>
+
+    <footer>
+        AI Fake Job Offer Detector | Privacy-focused local AI project
+    </footer>
+
+    <script>
+        const form = document.getElementById("analysisForm");
+        const jobText = document.getElementById("jobText");
+        const modelSelect = document.getElementById("model");
+        const analyzeButton = document.getElementById("analyzeButton");
+        const status = document.getElementById("status");
+        const results = document.getElementById("results");
+
+        function addResult(title, message) {
+            const card = document.createElement("article");
+            card.className = "result-card";
+
+            const heading = document.createElement("h3");
+            heading.textContent = title;
+
+            const paragraph = document.createElement("div");
+            paragraph.className = "result-text";
+            paragraph.textContent = message;
+
+            card.appendChild(heading);
+            card.appendChild(paragraph);
+            results.appendChild(card);
+        }
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const text = jobText.value.trim();
+
+            if (!text) {
+                status.textContent = "Please enter a job offer first.";
+                return;
+            }
+
+            results.replaceChildren();
+            status.textContent = "Analyzing... Please wait.";
+            analyzeButton.disabled = true;
+            analyzeButton.textContent = "Analyzing...";
+
+            try {
+                const response = await fetch("/api/analyze", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        model: modelSelect.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Analysis failed.");
+                }
+
+                if (data.results) {
+                    addResult("Gemma Analysis", data.results.Gemma);
+                    addResult("Llama Analysis", data.results.Llama);
+                } else {
+                    addResult(data.model + " Analysis", data.result);
+                }
+
+                if (data.safety_tips) {
+                    const tips = document.createElement("section");
+                    tips.className = "result-card";
+
+                    const heading = document.createElement("h3");
+                    heading.textContent = "Safety Recommendations";
+
+                    const list = document.createElement("ul");
+
+                    data.safety_tips.forEach(function (tip) {
+                        const item = document.createElement("li");
+                        item.textContent = tip;
+                        list.appendChild(item);
+                    });
+
+                    tips.appendChild(heading);
+                    tips.appendChild(list);
+                    results.appendChild(tips);
+                }
+
+                status.textContent = "Analysis complete.";
+            } catch (error) {
+                status.textContent = "Error: " + error.message;
+            } finally {
+                analyzeButton.disabled = false;
+                analyzeButton.textContent = "Analyze Job Offer";
+            }
+        });
+    </script>
+</body>
+</html>
+
